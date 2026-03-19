@@ -58,19 +58,16 @@
                    <div class="text-gray-500">Processeur:</div>
                    <div class="font-bold">{{ selectedDetails.specs?.cpu_brand }} {{ selectedDetails.specs?.cpu_family }} {{ selectedDetails.specs?.cpu_model }}</div>
                  </template>
-                 
                  <template v-if="selectedDetails.specs?.gpu_brand">
                    <div class="text-gray-500">Carte Graphique:</div>
                    <div class="font-bold text-orange-600 dark:text-orange-400">
                      {{ selectedDetails.specs?.gpu_brand }} {{ selectedDetails.specs?.gpu_family }} {{ selectedDetails.specs?.gpu_model }}
                    </div>
                  </template>
-
                  <template v-if="selectedDetails.specs?.ram_qty">
                    <div class="text-gray-500">Mémoire (RAM):</div>
                    <div class="font-bold">{{ selectedDetails.specs?.ram_qty }} Go <span class="text-gray-400 font-normal">({{ selectedDetails.specs?.ram_type }})</span></div>
                  </template>
-                 
                  <template v-if="selectedDetails.specs?.os">
                    <div class="text-gray-500">Système (OS):</div>
                    <div class="font-bold">{{ selectedDetails.specs?.os }}</div>
@@ -99,123 +96,120 @@
 
     <UModal v-model:open="isModalOpen" :ui="{ width: 'sm:max-w-2xl' }">
       <template #content>
-        <form @submit.prevent="saveArticle">
-          <UCard :ui="{ divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-            
-            <template #header>
-              <h3 class="font-bold text-xl">{{ form.id ? 'Modifier l\'article' : 'Ajouter au catalogue' }}</h3>
-            </template>
-            
-            <div class="max-h-[60vh] overflow-y-auto px-2 py-4 space-y-8">
-              <div class="space-y-4 p-5 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
-                <UFormField label="Référence Interne (Générée auto.)" required>
-                  <UInput v-model="form.code_article" size="lg" class="w-full font-mono font-bold text-primary" placeholder="TTT-MMMM-DDDD1" />
-                </UFormField>
-                <UFormField label="Désignation (Nom complet)" required><UInput v-model="form.label" size="lg" class="w-full" /></UFormField>
-                <UFormField label="Traçabilité">
-                  <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 w-full">
-                    <USwitch v-model="form.has_serial_number" />
-                    <span class="text-sm font-medium">{{ form.has_serial_number ? 'Gestion unitaire par S/N (Obligatoire)' : 'Gestion en vrac (Standard)' }}</span>
+        <UCard :ui="{ divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+          <template #header>
+            <h3 class="font-bold text-xl">{{ form.id ? 'Modifier l\'article' : 'Ajouter au catalogue' }}</h3>
+          </template>
+          
+          <div class="max-h-[60vh] overflow-y-auto px-2 py-4 space-y-8">
+            <div class="space-y-4 p-5 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800">
+              <UFormField label="Référence Interne (Générée auto.)" required>
+                <UInput v-model="form.code_article" size="lg" class="w-full font-mono font-bold text-primary" placeholder="TTT-MMMM-DDDD1" />
+              </UFormField>
+              <UFormField label="Désignation (Nom complet)" required><UInput v-model="form.label" size="lg" class="w-full" /></UFormField>
+              <UFormField label="Traçabilité">
+                <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 w-full">
+                  <USwitch v-model="form.has_serial_number" />
+                  <span class="text-sm font-medium">{{ form.has_serial_number ? 'Gestion unitaire par S/N (Obligatoire)' : 'Gestion en vrac (Standard)' }}</span>
+                </div>
+              </UFormField>
+            </div>
+
+            <div class="space-y-4">
+              <UFormField label="Catégorie">
+                <USelectMenu v-model="form.category" :items="refs?.categories || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full">
+                  <template #empty>Taper pour créer...</template>
+                </USelectMenu>
+              </UFormField>
+              <UFormField label="Marque">
+                <USelectMenu v-model="form.brand" :items="refs?.brands || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full" />
+              </UFormField>
+              <UFormField label="Fournisseur">
+                <USelectMenu v-model="form.supplier" :items="refs?.suppliers || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full" />
+              </UFormField>
+            </div>
+
+            <div v-if="isComputerCategory || categoryHasGpu" class="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+              <h4 class="font-bold text-primary-500 flex items-center gap-2 text-lg"><UIcon name="i-heroicons-computer-desktop" class="w-6 h-6" /> Spécifications Matérielles</h4>
+              
+              <div v-if="isComputerCategory" class="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-widest block">Processeur (CPU)</label>
+                <div class="space-y-4">
+                  <UFormField label="Marque">
+                    <USelectMenu v-model="form.specs.cpu_brand" :items="refs?.cpu_brands || []" value-key="name" label-key="name" placeholder="Marque..." class="w-full" size="lg" />
+                  </UFormField>
+                  <UFormField label="Gamme (ex: Core i5)">
+                    <USelectMenu v-model="form.specs.cpu_family" :items="availableCpuFamilies" value-key="name" label-key="name" :disabled="!form.specs.cpu_brand" placeholder="Gamme..." class="w-full" size="lg" />
+                  </UFormField>
+                  <UFormField label="Modèle exact">
+                    <USelectMenu v-model="form.specs.cpu_model" :items="availableCpuModels" value-key="name" label-key="name" :disabled="!form.specs.cpu_family" placeholder="Modèle..." class="w-full" size="lg" />
+                  </UFormField>
+                </div>
+              </div>
+
+              <div v-if="categoryHasGpu" class="p-5 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-200 dark:border-orange-800/30 space-y-4">
+                <div class="flex items-center justify-between border-b border-orange-200/50 dark:border-orange-800/50 pb-3">
+                  <label class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block">Carte Graphique (GPU)</label>
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Carte dédiée présente ?</span>
+                    <USwitch v-model="form.specs.has_dedicated_gpu" color="orange" />
                   </div>
-                </UFormField>
-              </div>
-
-              <div class="space-y-4">
-                <UFormField label="Catégorie">
-                  <USelectMenu v-model="form.category" :items="refs?.categories || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full">
-                    <template #empty>Taper pour créer...</template>
-                  </USelectMenu>
-                </UFormField>
-                <UFormField label="Marque">
-                  <USelectMenu v-model="form.brand" :items="refs?.brands || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full" />
-                </UFormField>
-                <UFormField label="Fournisseur">
-                  <USelectMenu v-model="form.supplier" :items="refs?.suppliers || []" label-key="name" searchable creatable placeholder="Sélectionner ou taper..." size="lg" class="w-full" />
-                </UFormField>
-              </div>
-
-              <div v-if="isComputerCategory || categoryHasGpu" class="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-800">
-                <h4 class="font-bold text-primary-500 flex items-center gap-2 text-lg"><UIcon name="i-heroicons-computer-desktop" class="w-6 h-6" /> Spécifications Matérielles</h4>
+                </div>
                 
-                <div v-if="isComputerCategory" class="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
-                  <label class="text-xs font-bold text-gray-500 uppercase tracking-widest block">Processeur (CPU)</label>
-                  <div class="space-y-4">
-                    <UFormField label="Marque">
-                      <USelectMenu v-model="form.specs.cpu_brand" :items="refs?.cpu_brands || []" value-key="name" label-key="name" placeholder="Marque..." class="w-full" size="lg" />
-                    </UFormField>
-                    <UFormField label="Gamme (ex: Core i5)">
-                      <USelectMenu v-model="form.specs.cpu_family" :items="availableCpuFamilies" value-key="name" label-key="name" :disabled="!form.specs.cpu_brand" placeholder="Gamme..." class="w-full" size="lg" />
-                    </UFormField>
-                    <UFormField label="Modèle exact">
-                      <USelectMenu v-model="form.specs.cpu_model" :items="availableCpuModels" value-key="name" label-key="name" :disabled="!form.specs.cpu_family" placeholder="Modèle..." class="w-full" size="lg" />
-                    </UFormField>
-                  </div>
-                </div>
-
-                <div v-if="categoryHasGpu" class="p-5 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-200 dark:border-orange-800/30 space-y-4">
-                  <div class="flex items-center justify-between border-b border-orange-200/50 dark:border-orange-800/50 pb-3">
-                    <label class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest block">Carte Graphique (GPU)</label>
-                    <div class="flex items-center gap-3">
-                      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Carte dédiée présente ?</span>
-                      <USwitch v-model="form.specs.has_dedicated_gpu" color="orange" />
-                    </div>
-                  </div>
-                  
-                  <div v-if="form.specs.has_dedicated_gpu" class="space-y-4 pt-2">
-                    <UFormField label="Marque GPU">
-                      <USelectMenu v-model="form.specs.gpu_brand" :items="refs?.gpu_brands || []" value-key="name" label-key="name" placeholder="Marque..." class="w-full" size="lg" />
-                    </UFormField>
-                    <UFormField label="Gamme (ex: RTX 40 Series)">
-                      <USelectMenu v-model="form.specs.gpu_family" :items="availableGpuFamilies" value-key="name" label-key="name" :disabled="!form.specs.gpu_brand" placeholder="Gamme..." class="w-full" size="lg" />
-                    </UFormField>
-                    <UFormField label="Modèle exact GPU">
-                      <USelectMenu v-model="form.specs.gpu_model" :items="availableGpuModels" value-key="name" label-key="name" :disabled="!form.specs.gpu_family" placeholder="Modèle..." class="w-full" size="lg" />
-                    </UFormField>
-                  </div>
-                </div>
-
-                <div v-if="isComputerCategory" class="space-y-4 pt-2">
-                  <UFormField label="Système d'exploitation">
-                    <USelectMenu v-model="form.specs.os" :items="refs?.os_list || []" value-key="name" label-key="name" placeholder="Sélectionner un OS..." class="w-full" size="lg" />
+                <div v-if="form.specs.has_dedicated_gpu" class="space-y-4 pt-2">
+                  <UFormField label="Marque GPU">
+                    <USelectMenu v-model="form.specs.gpu_brand" :items="refs?.gpu_brands || []" value-key="name" label-key="name" placeholder="Marque..." class="w-full" size="lg" />
                   </UFormField>
-                  <UFormField label="Quantité RAM (Go)"><UInput v-model="form.specs.ram_qty" type="number" placeholder="Ex: 16" class="w-full" size="lg" /></UFormField>
-                  <UFormField label="Type de RAM">
-                    <USelectMenu v-model="form.specs.ram_type" :items="refs?.ram_types || []" value-key="name" label-key="name" placeholder="Type..." class="w-full" size="lg" />
+                  <UFormField label="Gamme (ex: RTX 40 Series)">
+                    <USelectMenu v-model="form.specs.gpu_family" :items="availableGpuFamilies" value-key="name" label-key="name" :disabled="!form.specs.gpu_brand" placeholder="Gamme..." class="w-full" size="lg" />
                   </UFormField>
-                </div>
-
-                <div v-if="isComputerCategory" class="p-5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 space-y-4">
-                  <div class="flex justify-between items-center mb-2">
-                    <label class="text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Stockage</label>
-                    <UButton size="sm" color="gray" icon="i-heroicons-plus" @click="addStorage">Ajouter disque</UButton>
-                  </div>
-                  <div v-for="(disk, index) in form.specs.storage" :key="index" class="flex gap-2 items-center">
-                    <USelectMenu v-model="disk.type" :items="refs?.storage_types || []" value-key="name" label-key="name" class="w-1/3" placeholder="Type..." size="lg" />
-                    <UInput v-model="disk.capacity" class="flex-1" placeholder="Ex: 512 Go" size="lg" />
-                    <UButton color="red" variant="soft" icon="i-heroicons-trash" size="lg" @click="removeStorage(index)" :disabled="form.specs.storage.length === 1" />
-                  </div>
+                  <UFormField label="Modèle exact GPU">
+                    <USelectMenu v-model="form.specs.gpu_model" :items="availableGpuModels" value-key="name" label-key="name" :disabled="!form.specs.gpu_family" placeholder="Modèle..." class="w-full" size="lg" />
+                  </UFormField>
                 </div>
               </div>
 
-              <div v-if="isNetworkCategory" class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                <h4 class="font-bold text-blue-500 flex items-center gap-2 text-lg"><UIcon name="i-heroicons-server" class="w-6 h-6" /> Équipement Réseau</h4>
-                <UFormField label="Type d'équipement">
-                  <USelectMenu v-model="form.specs.network_type" :items="['Switch', 'Routeur', 'Pare-feu (Firewall)', 'NAS', 'Borne Wi-Fi (AP)']" creatable placeholder="Sélectionner..." size="lg" class="w-full" />
+              <div v-if="isComputerCategory" class="space-y-4 pt-2">
+                <UFormField label="Système d'exploitation">
+                  <USelectMenu v-model="form.specs.os" :items="refs?.os_list || []" value-key="name" label-key="name" placeholder="Sélectionner un OS..." class="w-full" size="lg" />
                 </UFormField>
+                <UFormField label="Quantité RAM (Go)"><UInput v-model="form.specs.ram_qty" type="number" placeholder="Ex: 16" class="w-full" size="lg" /></UFormField>
+                <UFormField label="Type de RAM">
+                  <USelectMenu v-model="form.specs.ram_type" :items="refs?.ram_types || []" value-key="name" label-key="name" placeholder="Type..." class="w-full" size="lg" />
+                </UFormField>
+              </div>
+
+              <div v-if="isComputerCategory" class="p-5 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 space-y-4">
+                <div class="flex justify-between items-center mb-2">
+                  <label class="text-sm font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Stockage</label>
+                  <UButton size="sm" color="gray" icon="i-heroicons-plus" @click="addStorage">Ajouter disque</UButton>
+                </div>
+                <div v-for="(disk, index) in form.specs.storage" :key="index" class="flex gap-2 items-center">
+                  <USelectMenu v-model="disk.type" :items="refs?.storage_types || []" value-key="name" label-key="name" class="w-1/3" placeholder="Type..." size="lg" />
+                  <UInput v-model="disk.capacity" class="flex-1" placeholder="Ex: 512 Go" size="lg" />
+                  <UButton color="red" variant="soft" icon="i-heroicons-trash" size="lg" @click="removeStorage(index)" :disabled="form.specs.storage.length === 1" />
+                </div>
               </div>
             </div>
 
-            <template #footer>
-              <div class="flex justify-end gap-4">
-                <UButton color="gray" variant="ghost" @click="isModalOpen = false" size="xl" class="px-8">Annuler</UButton>
-                <UButton type="submit" color="primary" :loading="isSubmitting" size="xl" class="px-8 shadow-md">
-                  {{ form.id ? 'Mettre à jour' : 'Enregistrer' }}
-                </UButton>
-              </div>
-            </template>
+            <div v-if="isNetworkCategory" class="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+              <h4 class="font-bold text-blue-500 flex items-center gap-2 text-lg"><UIcon name="i-heroicons-server" class="w-6 h-6" /> Équipement Réseau</h4>
+              <UFormField label="Type d'équipement">
+                <USelectMenu v-model="form.specs.network_type" :items="['Switch', 'Routeur', 'Pare-feu (Firewall)', 'NAS', 'Borne Wi-Fi (AP)']" creatable placeholder="Sélectionner..." size="lg" class="w-full" />
+              </UFormField>
+            </div>
+          </div>
 
-          </UCard>
-        </form>
+          <template #footer>
+            <div class="flex justify-end gap-4">
+              <UButton color="gray" variant="ghost" @click="isModalOpen = false" size="xl" class="px-8">Annuler</UButton>
+              <UButton color="primary" @click="saveArticle" :loading="isSubmitting" size="xl" class="px-8 shadow-md">
+                {{ form.id ? 'Mettre à jour' : 'Enregistrer' }}
+              </UButton>
+            </div>
+          </template>
+
+        </UCard>
       </template>
     </UModal>
 
@@ -325,14 +319,12 @@ const currentCategoryName = computed(() => {
   return typeof form.value.category === 'object' ? form.value.category.name : form.value.category
 })
 
-// === LOGIQUE DYNAMIQUE DES CATEGORIES ===
 const isComputerCategory = computed(() => {
   if (!refs.value?.categories || !currentCategoryName.value) return false
   const cat = refs.value.categories.find(c => c.name === currentCategoryName.value)
   return cat ? cat.is_computer : false
 })
 
-// Vérifie si la catégorie sélectionnée possède le flag GPU en Base de données
 const categoryHasGpu = computed(() => {
   if (!refs.value?.categories || !currentCategoryName.value) return false
   const cat = refs.value.categories.find(c => c.name === currentCategoryName.value)
@@ -341,46 +333,39 @@ const categoryHasGpu = computed(() => {
 
 const isNetworkCategory = computed(() => currentCategoryName.value === 'Réseau')
 
-const targetDeviceType = computed(() => {
-  const cat = currentCategoryName.value
-  if (['PC portable', 'PC tablette'].includes(cat)) return 'Mobile'
-  if (['Serveur'].includes(cat)) return 'Server'
-  return 'Desktop'
-})
-
-// --- CASCADES CPU BASEES SUR L'ID DE LA MARQUE/GAMME ---
 const availableCpuFamilies = computed(() => {
   if (!refs.value?.cpu_ranges || !form.value.specs.cpu_brand) return []
-  // On retrouve l'objet Marque pour avoir son ID
-  const brand = refs.value.cpu_brands?.find(b => b.name === form.value.specs.cpu_brand)
+  const brandName = typeof form.value.specs.cpu_brand === 'object' ? form.value.specs.cpu_brand.name : form.value.specs.cpu_brand
+  const brand = refs.value.cpu_brands?.find(b => b.name === brandName)
   if (!brand) return []
   return refs.value.cpu_ranges.filter(f => f.brand_id === brand.id)
 })
 
 const availableCpuModels = computed(() => {
   if (!refs.value?.cpu_models || !form.value.specs.cpu_family) return []
-  // On retrouve l'objet Gamme pour avoir son ID
-  const family = refs.value.cpu_ranges?.find(f => f.name === form.value.specs.cpu_family)
+  const familyName = typeof form.value.specs.cpu_family === 'object' ? form.value.specs.cpu_family.name : form.value.specs.cpu_family
+  const family = refs.value.cpu_ranges?.find(f => f.name === familyName)
   if (!family) return []
-  return refs.value.cpu_models.filter(m => m.range_id === family.id && m.device_type === targetDeviceType.value)
+  return refs.value.cpu_models.filter(m => m.range_id === family.id)
 })
 
 watch(() => form.value.specs.cpu_brand, () => { form.value.specs.cpu_family = ''; form.value.specs.cpu_model = '' })
 watch(() => form.value.specs.cpu_family, () => { form.value.specs.cpu_model = '' })
 
-// --- CASCADES GPU BASEES SUR L'ID DE LA MARQUE/GAMME ---
 const availableGpuFamilies = computed(() => {
   if (!refs.value?.gpu_ranges || !form.value.specs.gpu_brand) return []
-  const brand = refs.value.gpu_brands?.find(b => b.name === form.value.specs.gpu_brand)
+  const brandName = typeof form.value.specs.gpu_brand === 'object' ? form.value.specs.gpu_brand.name : form.value.specs.gpu_brand
+  const brand = refs.value.gpu_brands?.find(b => b.name === brandName)
   if (!brand) return []
   return refs.value.gpu_ranges.filter(f => f.brand_id === brand.id)
 })
 
 const availableGpuModels = computed(() => {
   if (!refs.value?.gpu_models || !form.value.specs.gpu_family) return []
-  const family = refs.value.gpu_ranges?.find(f => f.name === form.value.specs.gpu_family)
+  const familyName = typeof form.value.specs.gpu_family === 'object' ? form.value.specs.gpu_family.name : form.value.specs.gpu_family
+  const family = refs.value.gpu_ranges?.find(f => f.name === familyName)
   if (!family) return []
-  return refs.value.gpu_models.filter(m => m.range_id === family.id && m.device_type === targetDeviceType.value)
+  return refs.value.gpu_models.filter(m => m.range_id === family.id)
 })
 
 watch(() => form.value.specs.gpu_brand, () => { form.value.specs.gpu_family = ''; form.value.specs.gpu_model = '' })
@@ -393,7 +378,6 @@ watch(() => form.value.specs.has_dedicated_gpu, (val) => {
   } 
 })
 
-// --- AUTO REF GÉNÉRATION ---
 const formatCodePart = (str, len) => {
   if (!str) return 'X'.repeat(len)
   return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase().substring(0, len).padEnd(len, 'X')
@@ -458,19 +442,46 @@ async function viewSerials(article) {
 }
 
 async function saveArticle() {
+  if (!form.value.label || !form.value.category || !form.value.code_article) {
+    toast.add({ title: 'Attention', description: 'Veuillez remplir les champs obligatoires (Désignation, Réf, Catégorie).', color: 'orange' })
+    return
+  }
+
   isSubmitting.value = true
   try {
-    if (!isComputerCategory.value && !isNetworkCategory.value) {
+    if (!isComputerCategory.value && !isNetworkCategory.value && !categoryHasGpu.value) {
       form.value.specs = {}
     }
+    
+    const extractName = (val) => typeof val === 'object' && val !== null ? val.name : val;
+    
+    const payload = {
+      ...form.value,
+      category: extractName(form.value.category),
+      brand: extractName(form.value.brand),
+      supplier: extractName(form.value.supplier),
+      specs: {
+        ...form.value.specs,
+        cpu_brand: extractName(form.value.specs.cpu_brand),
+        cpu_family: extractName(form.value.specs.cpu_family),
+        cpu_model: extractName(form.value.specs.cpu_model),
+        gpu_brand: extractName(form.value.specs.gpu_brand),
+        gpu_family: extractName(form.value.specs.gpu_family),
+        gpu_model: extractName(form.value.specs.gpu_model),
+        os: extractName(form.value.specs.os),
+        ram_type: extractName(form.value.specs.ram_type),
+      }
+    }
+
     const method = form.value.id ? 'PUT' : 'POST'
-    await $fetch('/api/articles', { method, body: form.value })
+    await $fetch('/api/articles', { method, body: payload })
+    
     toast.add({ title: 'Succès', description: form.value.id ? 'Article mis à jour' : 'Article ajouté au catalogue', color: 'green' })
     isModalOpen.value = false
     refreshArticles()
     refreshRefs()
   } catch (e) {
-    toast.add({ title: 'Erreur', description: 'Action impossible', color: 'red' })
+    toast.add({ title: 'Erreur', description: 'Action impossible : ' + e.message, color: 'red' })
   } finally {
     isSubmitting.value = false
   }
